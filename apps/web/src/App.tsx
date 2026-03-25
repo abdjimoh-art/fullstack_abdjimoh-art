@@ -27,6 +27,11 @@ type AuthResponse = {
   role?: UserRole;
 };
 
+type AiChatResponse = {
+  answer?: string;
+  error?: string;
+};
+
 const envApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
 const apiBaseUrl = (envApiBaseUrl || "http://localhost:4000").replace(/\/$/, "");
 
@@ -77,6 +82,10 @@ export default function App() {
   const [createLoading, setCreateLoading] = useState(false);
 
   const [registeringClassId, setRegisteringClassId] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const dashboardTitle = useMemo(() => {
     if (!currentRole) {
@@ -179,6 +188,16 @@ export default function App() {
       await loadDashboard(data.role, data.accessToken);
     } catch (error) {
       if (error instanceof Error) {
+        if (
+          error.message === "Load failed" ||
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("NetworkError")
+        ) {
+          setStatus(
+            `Cannot reach API at ${apiBaseUrl}. Start backend and verify VITE_API_BASE_URL.`
+          );
+          return;
+        }
         setStatus(error.message);
         return;
       }
@@ -289,6 +308,46 @@ export default function App() {
       setStatus("Could not complete registration.");
     } finally {
       setRegisteringClassId(null);
+    }
+  }
+
+  async function handleAiSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = aiPrompt.trim();
+
+    if (!message) {
+      setAiError("Ask a question first.");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiAnswer("");
+
+    try {
+      const response = await fetch(apiUrl("/api/ai/chat"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await parseApiJson<AiChatResponse>(response);
+      if (!response.ok) {
+        setAiError(data.error ?? "AI request failed.");
+        return;
+      }
+
+      setAiAnswer(data.answer?.trim() || "No response from AI.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setAiError(error.message);
+        return;
+      }
+      setAiError("Could not reach the AI endpoint.");
+    } finally {
+      setAiLoading(false);
     }
   }
 
@@ -489,6 +548,28 @@ export default function App() {
         )}
 
         {status && <p className="status">{status}</p>}
+
+        {accessToken && (
+          <section className="stack ai-panel">
+            <h2>Workshop Assistant (Groq)</h2>
+            <p>Ask for class ideas, curriculum plans, or event descriptions.</p>
+            <form onSubmit={handleAiSubmit} className="stack">
+              <textarea
+                placeholder="Example: Suggest a 90-minute beginner pottery workshop plan."
+                value={aiPrompt}
+                onChange={(event) => setAiPrompt(event.target.value)}
+                rows={3}
+                maxLength={4000}
+                required
+              />
+              <button type="submit" disabled={aiLoading}>
+                {aiLoading ? "Thinking..." : "Ask Assistant"}
+              </button>
+            </form>
+            {aiError && <p className="status">{aiError}</p>}
+            {aiAnswer && <p className="ai-answer">{aiAnswer}</p>}
+          </section>
+        )}
       </section>
     </main>
   );

@@ -48,6 +48,8 @@ Set values in `apps/api/.env`:
 SUPABASE_URL="https://YOUR-PROJECT-ID.supabase.co"
 SUPABASE_PUBLISHABLE_KEY="YOUR_SUPABASE_PUBLISHABLE_KEY"
 SUPABASE_SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY"
+GROQ_API_KEY="YOUR_GROQ_API_KEY"
+GROQ_MODEL="llama-3.1-8b-instant"
 CORS_ORIGINS="https://YOUR-VERCEL-DOMAIN.vercel.app,http://localhost:5173"
 PORT=4000
 ```
@@ -94,6 +96,9 @@ Member:
 - `GET /api/member/classes`
 - `POST /api/member/registrations`
 
+AI:
+- `POST /api/ai/chat` with JSON body: `{ "message": "..." }`
+
 Promote user to admin:
 
 ```sql
@@ -131,6 +136,8 @@ Set environment variables in Render:
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `GROQ_API_KEY`
+- `GROQ_MODEL=llama-3.1-8b-instant` (or any enabled Groq model)
 - `CORS_ORIGINS=https://YOUR-VERCEL-DOMAIN.vercel.app,http://localhost:5173`
 
 ### 8.2 Vercel Web project
@@ -149,5 +156,6 @@ Redeploy after setting env vars. Do not add a trailing slash.
 ### 8.3 Verify production
 
 1. Open `https://YOUR-RENDER-API.onrender.com/health` and confirm `{"status":"ok"}`.
-2. Open your Vercel URL and test signup/login.
-3. If browser shows CORS errors, verify `CORS_ORIGINS` exactly matches your Vercel domain.
+2. Open your Vercel URL, test signup/login, then ask a question in the "Workshop Assistant (Groq)" panel.
+3. If the AI panel fails, verify Render has `GROQ_API_KEY` and `GROQ_MODEL` configured.
+4. If browser shows CORS errors, verify `CORS_ORIGINS` exactly matches your Vercel domain.

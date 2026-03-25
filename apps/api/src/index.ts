@@ -3,8 +3,12 @@ import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import aiRouter from "./ai.js";
 
-dotenv.config();
+const currentDir = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(currentDir, "../.env") });
 
 type UserRole = "admin" | "member";
 
@@ -39,6 +43,7 @@ const authClient = createClient(supabaseUrl, supabasePublishableKey);
 const dbClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const app = express();
+app.use(express.json());
 
 app.use(
   cors({
@@ -52,7 +57,7 @@ app.use(
     }
   })
 );
-app.use(express.json());
+app.use("/api/ai", aiRouter);
 
 const signupSchema = z.object({
   email: z.string().email(),
